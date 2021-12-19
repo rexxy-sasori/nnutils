@@ -17,6 +17,8 @@ from nnutils.cnn_complexity_analyzer.profile import profile_compute_layers
 #    ...
 # }
 # where the keys are the same as keys in model.state_dict()
+# Attributes of ComputeProfile is found in nnutils.cnn_complexity_analyzer.utils.NNComputeModuleProfile
+# Number of keys in profile results is the sum of CONV layers and FC layers in the network
 
 profile_results, model_sparsity = profile_compute_layers(model, inputs={}, verbose=True)
 ```
