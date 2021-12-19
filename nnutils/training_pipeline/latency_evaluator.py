@@ -10,9 +10,15 @@ import sparse_dot_mkl
 import torch
 #from torch_sparse import spmm
 
+from nnutils.training_pipeline.trainers.utils import SuppressPrints
 
-def evaluate_latency(model_state, inputs, target_kernel, target_device, num_trials):
-    return PLATFORM_LATENCY_EVAL[(target_kernel, target_device)](model_state, inputs, target_device, num_trials)
+def evaluate_latency(model_state, inputs, target_kernel, target_device, num_trials, verbose=False):
+    with SuppressPrints(not verbose):
+        latency_ms = PLATFORM_LATENCY_EVAL[(target_kernel, target_device)](
+            model_state, inputs, target_device, num_trials
+        )
+
+    return latency_ms
 
 
 def eval_sparsednn(model_state, inputs_dict, target_device, num_trials):

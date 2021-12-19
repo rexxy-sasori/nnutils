@@ -8,6 +8,7 @@ nnutils/cnn_complexity_analyzer/utils.py
 nnutils/cnn_complexity_analyzer/vision_hooks.py
 nnutils/training_pipeline/__init__.py
 nnutils/training_pipeline/accuracy_evaluator.py
+nnutils/training_pipeline/latency_evaluator.py
 nnutils/training_pipeline/utils.py
 nnutils/training_pipeline/trainers/__init__.py
 nnutils/training_pipeline/trainers/base_trainer.py
