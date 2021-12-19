@@ -1,3 +1,2 @@
-import cnn_complexity_analyzer
-import training_pipeline
-
+from . import cnn_complexity_analyzer
+from . import training_pipeline
