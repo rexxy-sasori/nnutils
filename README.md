@@ -3,7 +3,12 @@ This repository is written to simplify the common neural network pipeline
 In this repo, you will find: 1) code for training and evaluation of neural networks
 ; 2) code for layerwise analysis of computational complexity
 
-Example usage for analyzing complexity:
+Installation:
+```bash
+pip install nn-pipeline
+```
+
+Example for analyzing complexity:
 ```python
 from nnutils.cnn_complexity_analyzer.profile import profile_compute_layers
 
@@ -24,7 +29,7 @@ from nnutils.cnn_complexity_analyzer.profile import profile_compute_layers
 profile_results, model_sparsity = profile_compute_layers(model, inputs=inputs, verbose=True)
 ```
 
-Example usage for evaluating the latency:
+Example for evaluating the latency:
 ```python
 from nnutils.cnn_complexity_analyzer.profile import profile_compute_layers
 from nnutils.training_pipeline import latency_evaluator
@@ -46,7 +51,7 @@ latency = latency_evaluator.evaluate_latency(
 ```
 
 
-Example usage for evaluating accuracy:
+Example for evaluating accuracy:
 ```python
 from nnutils.training_pipeline import accuracy_evaluator
 
