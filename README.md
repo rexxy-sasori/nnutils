@@ -9,7 +9,8 @@ from nnutils.cnn_complexity_analyzer.profile import profile_compute_layers
 
 # model: torch.nn.Module
 # inputs: dictionary type decribing input to the network
-# for cifar10: inputs={'x': torch.randn(1,3,32,32)}
+# Example: most CNN models on cifar10: inputs={'x': torch.randn(1,3,32,32)} 
+# Keys in inputs needs to be the same as the parameter names for model's forward function
 
 # profile results will look like:
 # {
