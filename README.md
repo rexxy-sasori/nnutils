@@ -39,7 +39,7 @@ target_device = 'cpu'
 num_trials = 5
 
 profile_results, _ = profile_compute_layers(model, inputs=inputs, verbose=True)
-net_state = net.state_dict() # state dict for sparse model
+net_state = model.state_dict() # state dict for sparse model
 latency = latency_evaluator.evaluate_latency(
     model_state=net_state,
     inputs=profile_results,
