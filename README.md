@@ -41,3 +41,25 @@ from nnutils.training_pipeline import accuracy_evaluator
 
 top1_acc, loss = accuracy_evaluator.eval(model, device, data_loader, criterion, print_acc=True)
 ```
+
+Example for evaluating the latency:
+```python
+from nnutils.cnn_complexity_analyzer.profile import profile_compute_layers
+from nnutils.training_pipeline import latency_evaluator
+
+target_kernel = 'mkl'
+target_device = 'cpu'
+num_trials = 5
+
+profile_results, _ = profile_compute_layers(model, inputs=inputs, verbose=True)
+
+net_state = net.state_dict() # state dict for sparse model
+latency, layerwise_latency = latency_evaluator.evaluate_latency(
+    model_state=net_state,
+    inputs=profile_results,
+    target_kernel=target_kernel,
+    target_device=target_device,
+    num_trials=num_trials,
+    verbose=True
+) # average latency measured over num_trials runs
+```
