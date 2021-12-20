@@ -28,7 +28,6 @@ from nnutils.cnn_complexity_analyzer.profile import profile_compute_layers
 profile_results, model_sparsity = profile_compute_layers(model, inputs=inputs, verbose=True)
 ```
 
-
 Example for evaluating accuracy:
 ```python
 from nnutils.training_pipeline import accuracy_evaluator
@@ -51,14 +50,9 @@ target_device = 'cpu'
 num_trials = 5
 
 profile_results, _ = profile_compute_layers(model, inputs=inputs, verbose=True)
-<<<<<<< HEAD
-net_state = model.state_dict() # state dict for sparse model
-latency = latency_evaluator.evaluate_latency(
-=======
 
-net_state = net.state_dict() # state dict for sparse model
+net_state = model.state_dict() # state dict for sparse model
 latency, layerwise_latency = latency_evaluator.evaluate_latency(
->>>>>>> 6e0d760f4c515b07cf98cf50f6d346264b436cf1
     model_state=net_state,
     inputs=profile_results,
     target_kernel=target_kernel,
