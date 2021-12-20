@@ -1,24 +1,25 @@
 """
 All latency measurements are returned in ms
 """
-import os
-import time
-
 import numpy as np
+import os
 import scipy.sparse
 import sparse_dot_mkl
+import time
 import torch
-#from torch_sparse import spmm
 
 from nnutils.training_pipeline.trainers.utils import SuppressPrints
 
+
+# from torch_sparse import spmm
+
 def evaluate_latency(model_state, inputs, target_kernel, target_device, num_trials, verbose=False):
     with SuppressPrints(not verbose):
-        latency_ms = PLATFORM_LATENCY_EVAL[(target_kernel, target_device)](
+        latency_ms, layerwise_latency_ms = PLATFORM_LATENCY_EVAL[(target_kernel, target_device)](
             model_state, inputs, target_device, num_trials
         )
 
-    return latency_ms
+    return latency_ms, layerwise_latency_ms
 
 
 def eval_sparsednn(model_state, inputs_dict, target_device, num_trials):
@@ -26,6 +27,8 @@ def eval_sparsednn(model_state, inputs_dict, target_device, num_trials):
 
     print('measuring latency for model')
     time_total = 0
+
+    layerwise_avg_latency = []
     os.chdir('sparsednn')
     for idx, (target_layer_name, input_detail) in enumerate(inputs_dict.items()):
         weight_tensor = model_state[target_layer_name]
@@ -59,10 +62,12 @@ def eval_sparsednn(model_state, inputs_dict, target_device, num_trials):
         time_total += (end - start)
 
         total_latency += expected_latency.mean()
+
+        layerwise_avg_latency.append(expected_latency.mean())
     print('total measuring cost: {}'.format(time_total))
     print(total_latency)
     os.chdir('..')
-    return 1000*total_latency
+    return 1000 * total_latency, 1000 * np.array(layerwise_avg_latency)
 
 
 def eval_torch_sparse_cuda(model_state, inputs_dict, target_device, num_trials):
@@ -103,7 +108,7 @@ def eval_torch_sparse_cuda(model_state, inputs_dict, target_device, num_trials):
         total_latency += np.array(latency).mean()
     print('total measuring cost: {}'.format(time_total))
     print(total_latency)
-    return 1000*total_latency
+    return 1000 * total_latency
 
 
 def eval_torch_sparse_cpu(model_state, inputs_dict, target_device, num_trials):
@@ -144,7 +149,7 @@ def eval_torch_sparse_cpu(model_state, inputs_dict, target_device, num_trials):
         total_latency += np.array(latency).mean()
     print('total measuring cost: {}'.format(time_total))
     print(total_latency)
-    return 1000*total_latency
+    return 1000 * total_latency
 
 
 def eval_mkl_sparse_cpu(model_state, inputs_dict, target_device, num_trials):
@@ -152,6 +157,7 @@ def eval_mkl_sparse_cpu(model_state, inputs_dict, target_device, num_trials):
     print('measuring latency for model')
     time_total = 0
 
+    layerwise_avg_latency = []
     for idx, (target_layer_name, input_detail) in enumerate(inputs_dict.items()):
         weight_tensor = model_state[target_layer_name]
         if weight_tensor.dim() == 4:
@@ -182,9 +188,13 @@ def eval_mkl_sparse_cpu(model_state, inputs_dict, target_device, num_trials):
         # print('used: {}s'.format(end - start))
         time_total += sum(latency)
         total_latency += np.array(latency).mean()
+
+        layerwise_avg_latency.append(np.array(latency).mean())
+
     print('total measuring cost: {}'.format(time_total))
     print(total_latency)
-    return 1000*total_latency
+
+    return 1000 * total_latency, 1000 * np.array(layerwise_avg_latency)
 
 
 def eval_block_sparse_cuda(model_state, inputs_dict, target_device, num_trials):
