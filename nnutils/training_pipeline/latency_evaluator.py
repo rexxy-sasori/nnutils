@@ -183,7 +183,7 @@ def eval_mkl_sparse_cpu(model_state, inputs_dict, target_device, num_trials):
             sparse_dot_mkl.dot_product_mkl(sparse, dense)
             end = time.time()
             latency.append(end - start)
-        latency = latency[2:]
+        latency = latency[0:]
         # print('latency',latency)
         # print('used: {}s'.format(end - start))
         time_total += sum(latency)
