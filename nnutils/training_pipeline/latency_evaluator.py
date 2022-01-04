@@ -1,11 +1,12 @@
 """
 All latency measurements are returned in ms
 """
-import numpy as np
 import os
+import time
+
+import numpy as np
 import scipy.sparse
 import sparse_dot_mkl
-import time
 import torch
 
 from nnutils.training_pipeline.trainers.utils import SuppressPrints
@@ -64,6 +65,63 @@ def eval_sparsednn(model_state, inputs_dict, target_device, num_trials):
         total_latency += expected_latency.mean()
 
         layerwise_avg_latency.append(expected_latency.mean())
+    print('total measuring cost: {}'.format(time_total))
+    print(total_latency)
+    os.chdir('..')
+    return 1000 * total_latency, 1000 * np.array(layerwise_avg_latency)
+
+
+def eval_sparsednn_c_api(model_state, inputs_dict, target_device, num_trials):
+    import subprocess
+
+    total_latency = 0
+    layerwise_avg_latency = []
+    print('measuring latency for model')
+    time_total = 0
+    start = time.time()
+    os.chdir('sparsednn')
+    for idx, (target_layer_name, input_detail) in enumerate(inputs_dict.items()):
+        weight_tensor = model_state[target_layer_name]
+        if weight_tensor.dim() == 4:
+            cout, cin, hk, wk = weight_tensor.shape
+            M = cout
+            K = cin * hk * wk
+            N = input_detail.output_dim[-1] * input_detail.output_dim[-2]
+            weight = weight_tensor.reshape(M, K).to(target_device).numpy()
+        else:
+            M = weight_tensor.shape[0]
+            K = weight_tensor.shape[1]
+            N = 1
+            weight = weight_tensor.to(target_device).numpy()
+
+        print('start measuring latency using sparsednn, for {}'.format(target_layer_name))
+
+        np.save('matrix_transposed.npy', weight.transpose().astype(np.float32))
+        bias = np.random.normal(size=(M))
+        input = np.random.normal(size=(K, N))
+        np.save('bias.npy', bias.astype(np.float32))
+        np.save('BC.npy', input.astype(np.float32))
+        if N <= 4: continue
+
+        latency = []
+        for _ in range(num_trials):
+            b = subprocess.run(f'bash test_sparsednn_c_api.sh {M} {K} {N} 0', shell=True, stdout=subprocess.PIPE)
+            if b.returncode != 0:
+                print(b.stdout)
+                raise Exception(
+                    'latency measured failed for layer {}, ret_code:{}, M:{}, K:{}, N:{}'.format(target_layer_name,
+                                                                                                 b.returncode, M, K, N))
+
+            lines = b.stdout.decode().split('\n')
+            for i, line in enumerate(lines):
+                if 'spmm microkernel' in line:
+                    lat = float(lines[i + 1].split()[2])
+                    latency.append(lat)
+
+        total_latency += np.array(latency).mean()
+        layerwise_avg_latency.append(np.array(latency).mean())
+    end = time.time()
+    time_total = end - start
     print('total measuring cost: {}'.format(time_total))
     print(total_latency)
     os.chdir('..')
@@ -203,7 +261,7 @@ def eval_block_sparse_cuda(model_state, inputs_dict, target_device, num_trials):
 
 PLATFORM_LATENCY_EVAL = {
     ('sparsednn', 'cpu'): eval_sparsednn,
-
+    ('sparsednn_c_api', 'cpu'): eval_sparsednn_c_api,
     ('torch_sparse', 'cuda'): eval_torch_sparse_cuda,
     ('torch_sparse', 'cpu'): eval_torch_sparse_cpu,
 
