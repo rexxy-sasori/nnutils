@@ -10,8 +10,6 @@ import torch
 
 from nnutils.training_pipeline.trainers.utils import SuppressPrints
 
-from platform_aware_pruning.src.evaluators.latency_evaluator import eval_sparsednn_c_api
-
 
 # from torch_sparse import spmm
 
