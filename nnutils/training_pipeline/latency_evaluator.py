@@ -102,8 +102,26 @@ def eval_sparsednn_c_api(model_state, inputs_dict, target_device, num_trials):
         if N <= 4: continue
 
         latency = []
+        # code generation
+        ret_code = os.system(f'python code_gen_cpu.py --A_dim {M} --B_dim {K} --C_dim {N} --AT 6 --CT 2 --B_blocks 1 --C_blocks 1 --Gy 1 --infile matrix_transposed.npy --outfile testing.cpp --outfile_asm test1.s --x86 --no_relu --infile_bias bias.npy --fuse')
+        if ret_code != 0:
+            raise Exception(
+                'code generation failed for layer {}, ret_code:{}, M:{}, K:{}, N:{}'.format(target_layer_name,ret_code, M, K, N))
+        
+        # gcc
+        ret_code = os.system("gcc -shared -g test1.s -o test.so")
+        if ret_code != 0 :
+            raise Exception(
+                'gcc failed for layer {}, ret_code:{}, M:{}, K:{}, N:{}'.format(target_layer_name,ret_code, M, K, N))
+        
+        # icc
+        ret_code = os.system(f"icc -fopenmp -I . -qmkl -O3 -march=native -D AT=6 -D CT=2 -D C_Blocks=1 -DA_dim={M} -DINFILE=matrix_transposed.npy -D B_dim={K} -D C_dim={N} -D C_blocks=1 -D X86=1 -D MULTI=0 driver_cpu.cpp -lcnpy -o test -std=c++17")
+        if ret_code != 0 :
+            raise Exception(
+                    'icc compile failed for layer {}, ret_code:{}, M:{}, K:{}, N:{}'.format(target_layer_name,
+                                                                                                    ret_code, M, K, N))
         for _ in range(num_trials):
-            b = subprocess.run(f'bash test_sparsednn_c_api.sh {M} {K} {N} 0',shell=True,stdout=subprocess.PIPE)
+            b = subprocess.run("./test",shell=True,stdout=subprocess.PIPE)
             if b.returncode != 0:
                 print(b.stdout)
                 raise Exception(
@@ -111,10 +129,8 @@ def eval_sparsednn_c_api(model_state, inputs_dict, target_device, num_trials):
                                                                                                     b.returncode, M, K, N))
  
             lines = b.stdout.decode().split('\n')
-            # print(lines)
             for i,line in enumerate(lines):
                 if 'spmm microkernel' in line:
-                    # print(lines[i+1])
                     lat = float(lines[i+1].split()[2])
                     latency.append(lat)
 
@@ -125,7 +141,7 @@ def eval_sparsednn_c_api(model_state, inputs_dict, target_device, num_trials):
     print('total measuring cost: {}'.format(time_total))
     print(total_latency)
     os.chdir('..')
-    return 1000*total_latency, 1000 * np.array(layerwise_avg_latency)
+    return total_latency,  np.array(layerwise_avg_latency)
 
 
 def eval_torch_sparse_cuda(model_state, inputs_dict, target_device, num_trials):
